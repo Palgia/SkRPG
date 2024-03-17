@@ -1,0 +1,57 @@
+#Prints informations on the console.
+debug: true
+
+#Represents the refresh interval of the players' statistics to continuously check the applied amounts. 
+#Indicating 0 disables this.
+refresh-time: 3 seconds
+
+#List with all variables you can use to store stats
+#Useful if you code some things by yourself
+#The variable are {skrpg.player.database::%uuid of player%::%stat%::%storage variable%}
+#Example: {skrpg.player.database::Palgia::defense::custom}
+storage-variables:
+  - "base" #DONT REMOVE THIS
+  - "permanent" #DONT REMOVE THIS
+  - "temporary" #DONT REMOVE THIS
+  - "equipment" #DONT REMOVE THIS
+  - "custom"
+
+#List of all the events that update the player's statistics.
+#Events: equip-armor, drop, pickup, death, respawn, kill
+#You should not change this unless you know what you are doing
+update-events:
+  - "equip-armor"
+  - "drop"
+  - "pickup"
+  - "death"
+  - "respawn"
+  - "kill"
+
+#Should mana be enabled ?
+#This is needed for Mana and Wisdom stat.
+mana-enabled: true
+
+#The base mana amount is in mana.yml in plugins/SkRPG/stats/mana.yml
+#Change how often mana should regen
+mana-regen-time: 3 seconds
+#How much mana should be given when mana-regen-time is triggered
+mana-regen-amount: 5
+
+#Custom action bar ?
+#You can customize the action bar content below
+action-bar-enabled: true
+
+#Content of the action bar
+#You can use placeholders: {%stat%-amount}, {%stat%-maxamount}, {health}, {max-health}
+action-bar-content: "&c❤ Health {health}&8/&c{max-health}     &a🛡 Defense &f{defense-amount}     <#30b5f8>🪄 Mana &b{mana-amount}&8/&b{mana-maxamount}"
+
+#Enable or disable custom regen system
+#You can change the base health in plugins/SkRPG/stats/health.yml
+custom-health-regen: true
+
+#Change how often health should regen
+health-regen-time: 10 seconds
+
+#How much health should be given each time health-regent-time is triggered
+#If this is enabled, stat Vitality will increase the amount
+health-regen-amount: 5
