@@ -1,0 +1,93 @@
+#
+#This is an addon for SkRPG that allows adding statistics to items.
+options:
+    version: 1.0
+#
+#Checks if SkRPG is loaded, then register
+#
+on skrpg complete loading:
+    if script "SkRPG/Main/!Main/SkRPG.sk" is loaded:
+        skRPGLoadAddon("SkRPGTemporaryStatsAddon", "SkRPG/Main/Addons/SkRPGTemporaryStatsAddon.sk")
+    else:
+        send "&a[SkRPGTemporaryStatsAddon] &cAddon not loaded ! You need to install SkRPG !" to console
+
+#
+#
+#Function to add a temporary stat
+#
+#
+function SkRpgTemporaryStatAdd(p: player, stat: text, amount: integer, time: timespan):
+
+    set {_uuid} to uuid of {_p}
+    if {skrpg.config.database::*} contains {_stat}:
+        if {skrpg.main-config::storage-variables::*} does not contain "temporary":
+            send "&a[SkRPG] &cERROR: Storage temporary not found. Please add 'temporary' to storage types in config.yml!" to console
+            stop
+        set {_random-number1} to random integer between 1 and 999999
+        set {_random-number2} to random integer between 1 and 999999
+        set {_id} to "%{_random-number1}%-%{_random-number2}%"
+        #Save all informations
+        add {_id} to {skrpgtemporarystats.player.database::%{_uuid}%::*}
+        set {_now} to now
+        set {skrpgtemporarystats.player.database::%{_uuid}%::%{_id}%::stat} to {_stat}
+        set {skrpgtemporarystats.player.database::%{_uuid}%::%{_id}%::amount} to {_amount}
+        set {skrpgtemporarystats.player.database::%{_uuid}%::%{_id}%::start-date} to {_now}
+        set {skrpgtemporarystats.player.database::%{_uuid}%::%{_id}%::duration} to {_time}
+        add {_time} to {_now}
+        set {skrpgtemporarystats.player.database::%{_uuid}%::%{_id}%::end-date} to {_now}
+        add {_amount} to {skrpg.player.database::%{_uuid}%::%{_stat}%::%{_storage}%}
+        skRPGAddStatAmount({_p}, {_stat}, {_amount}, "temporary", true)
+        skRPGCheckStats({_p}, {_eventcall})
+    else:
+        send "&a[SkRPGTemporaryStatsAddon] &cERROR: Stat %{_stat}% used in function SkRpgTemporaryStatAdd does not exists." to console
+
+
+#
+#Checks all stats
+#
+every 1 second:
+
+    loop all players:
+        loop {skrpgtemporarystats.player.database::%uuid of loop-player%::*}:
+            set {_id} to loop-value-2
+            if now >= {skrpgtemporarystats.player.database::%uuid of loop-player%::%{_id}%::end-date}:                
+                skRPGRemoveStatAmount(loop-player, {skrpgtemporarystats.player.database::%uuid of loop-player%::%{_id}%::stat}, {skrpgtemporarystats.player.database::%uuid of loop-player%::%{_id}%::amount}, "temporary", true)
+                delete {skrpgtemporarystats.player.database::%uuid of loop-player%::%{_id}%::*}
+                remove {_id} from {skrpgtemporarystats.player.database::%uuid of loop-player%::*}
+
+#
+#Commands
+#
+command /skrpgtemporarystat <text> <player> <text> <integer> <timespan>:
+    permission: skrpgtemporarystat.admin
+    usage: /skrpgtemporarystat help
+    trigger:
+        if arg 1 is "addstat":
+            if arg 2 is set:
+                if arg 3 is set:
+                    if {skrpg.config.database::*} does not contain arg 3:
+                        send "&a[SkRPGTemporaryStatsAddon] &cERROR: Stat %arg 3% does not exists !"
+                        stop
+                    if arg 4 is set:
+                        if arg 5 is set:
+                            SkRpgTemporaryStatAdd(arg 2, arg 3, arg 4, arg 5)
+                            send "&a[SkRPGTemporaryStatsAddon] &e%arg 4% &agiven to stat &e%arg 3% &afor player &e%arg 2% &afor &e%arg 5% &a!"
+                        else:
+                            send "&a[SkRPGTemporaryStatsAddon] &cERROR: Timespan argument missing !"
+                    else:
+                        send "&a[SkRPGTemporaryStatsAddon] &cERROR: Amount argument missing !"
+                else:
+                    send "&a[SkRPGTemporaryStatsAddon] &cERROR: Stat argument missing !" 
+            else:
+                send "&a[SkRPGTemporaryStatsAddon] &cERROR: Player argument missing !"
+
+on tab complete of "/skrpgtemporarystat":
+    set tab completions for position 1 to "addstat"
+    if tab arg-1 is "addstat":
+        set tab completions for position 2 to all players
+        if tab arg-2 is set:
+            set tab completions for position 3 to {skrpg.config.database::*}
+            if tab arg-3 is set:
+                set tab completions for position 4 to 5 and 10 and 20 and 30 and 40 and 50
+                if tab arg-4 is set:
+                    set tab completions for position 5 to "30 seconds" and "1 minute" and "10 minutes" and "1 hour"

@@ -1,0 +1,793 @@
+# _____ _   __ ____________ _____ 
+#/  ___| | / / | ___ \ ___ \  __ \
+#\ `--.| |/ /  | |_/ / |_/ / |  \/
+# `--. \    \  |    /|  __/| | __ 
+#/\__/ / |\  \ | |\ \| |   | |_\ \
+#\____/\_| \_/ \_| \_\_|    \____/
+#-------------------------------------------
+#Made by Palgia
+#-------------------------------------------
+#Wiki: https://github.com/Palgia/SkRPG                      
+                                 
+
+#
+#Do not change this
+#
+options:
+    version: 1.0
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#
+#LOAD FILES
+#
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+on load:
+
+    if yaml file "plugins/SkRPG/config.yml" exists:
+        #Unlod everything just to be sure
+        loop all of the currently loaded yaml files:
+            unload yaml loop-value-1
+        #Clearing everything
+        delete {skrpg.config.database::*}
+        delete {skrpg.main-config::*}
+        #
+        #Config loading
+        #
+        send "&a[SkRPG] &fLoading config..." to console
+        load yaml "plugins/SkRPG/config.yml" as "config"
+        #Check debug
+        set {_debug} to yaml value "debug" from "config"
+        if {_debug} is not set:
+            set {_debug} to false
+        if {_debug} is true:
+            send "&a[SkRPG] &fDebug mode is enabled !" to console
+        set {skrpg.main-config::debug} to {_debug}
+        #Check refresh time
+        set {_refresh} to yaml value "refresh-time" from "config"
+        set {_refresh} to {_refresh} parsed as timespan
+        if {_refresh} is not set:
+            set {_refresh} to 0 seconds
+        if {_debug} is true:
+            send "&a[SkRPG] &fRefresh time defined to &e%{_refresh}%" to console
+        set {skrpg.main-config::refresh-time} to {_refresh}
+        #Check storage types
+        set {_storage-variables::*} to yaml list "storage-variables" from "config"
+        loop {_storage-variables::*}:
+            add loop-value to {skrpg.main-config::storage-variables::*}
+            if {_debug} is true:
+                send "&a[SkRPG] &fStorage type &e%loop-value% &renabled" to console
+        #Check event updates
+        set {_update-events::*} to yaml list "update-events" from "config"
+        loop {_update-events::*}:
+            add loop-value to {skrpg.main-config::update-events::*}
+            if {_debug} is true:
+                send "&a[SkRPG] &fEvent &e%loop-value% &rregistered" to console
+        #Mana enabled or disabled
+        set {_mana-enabled} to yaml value "mana-enabled" from "config"
+        if {_mana-enabled} is not set:
+            set {_mana-enabled} to true
+        if {_debug} is true:
+            if {_mana-enabled} is true:
+                send "&a[SkRPG] &fMana is enabled" to console
+            else:
+                send "&a[SkRPG] &fMana is disabled" to console
+        set {skrpg.main-config::is-mana-enabled} to {_mana-enabled}
+        #Mana regen time
+        if {skrpg.main-config::is-mana-enabled} is true:
+            set {_mana-regen-time} to yaml value "mana-regen-time" from "config"
+            set {_mana-regen-time} to {_mana-regen-time} parsed as timespan
+            if {_mana-regen-time} is not set:
+                set {_mana-regen-time} to 3 seconds
+            if {_debug} is true:
+                send "&a[SkRPG] &fMana regen time defined to &e%{_mana-regen-time}%" to console
+            set {skrpg.main-config::mana-regen-time} to {_mana-regen-time}
+        #Mana regen amount
+        if {skrpg.main-config::is-mana-enabled} is true:
+            set {_mana-regen-amount} to yaml value "mana-regen-amount" from "config"
+            if {_mana-regen-amount} is not set:
+                set {_mana-regen-amount} to 3 
+            if {_debug} is true:
+                send "&a[SkRPG] &fMana regen amount defined to &e%{_mana-regen-amount}%" to console
+            set {skrpg.main-config::mana-regen-amount} to {_mana-regen-amount}
+        #Action bar enabled or disabled
+        set {_action-bar-enabled} to yaml value "action-bar-enabled" from "config"
+        if {_action-bar-enabled} is not set:
+            set {_action-bar-enabled} to true
+        if {_debug} is true:
+            if {_action-bar-enabled} is true:
+                send "&a[SkRPG] &fAction bar is enabled" to console
+            else:
+                send "&a[SkRPG] &fAction bar is disabled" to console
+        set {skrpg.main-config::action-bar-enabled} to {_action-bar-enabled}
+        #Action bar content
+        if {skrpg.main-config::action-bar-enabled} is true:
+            set {_action-bar-content} to yaml value "action-bar-content" from "config"
+            if {_action-bar-content} is not set:
+                set {_action-bar-content} to ""
+            if {_debug} is true:
+                send "&a[SkRPG] &fAction bar content defined to: &7%{_action-bar-content}%" to console
+            set {skrpg.main-config::action-bar-content} to {_action-bar-content}
+        #Custom health regen enabled or disabled
+        set {_health-enabled} to yaml value "custom-health-regen" from "config"
+        if {_health-enabled} is not set:
+            set {_health-enabled} to true
+        if {_debug} is true:
+            if {_health-enabled} is true:
+                send "&a[SkRPG] &fhealth is enabled" to console
+            else:
+                send "&a[SkRPG] &fhealth is disabled" to console
+        set {skrpg.main-config::custom-health-regen-enabled} to {_health-enabled}
+        #Health regen time
+        if {skrpg.main-config::custom-health-regen-enabled} is true:
+            set {_health-regen-time} to yaml value "health-regen-time" from "config"
+            set {_health-regen-time} to {_health-regen-time} parsed as timespan
+            if {_health-regen-time} is not set:
+                set {_health-regen-time} to 10 seconds
+            if {_debug} is true:
+                send "&a[SkRPG] &fhealth regen time defined to &e%{_health-regen-time}%" to console
+            set {skrpg.main-config::health-regen-time} to {_health-regen-time}
+        #Health regen amount
+        if {skrpg.main-config::custom-health-regen-enabled} is true:
+            set {_health-regen-amount} to yaml value "health-regen-amount" from "config"
+            if {_health-regen-amount} is not set:
+                set {_health-regen-amount} to 5 
+            if {_debug} is true:
+                send "&a[SkRPG] &fhealth regen amount defined to &e%{_health-regen-amount}%" to console
+            set {skrpg.main-config::health-regen-amount} to {_health-regen-amount}
+        unload yaml "config"
+        #
+        #Loading statistics
+        #
+        load all yaml from directory "plugins/SkRPG/stats"
+        loop all of the currently loaded yaml files:
+            set {_id} to yaml value "id" from loop-value-1
+            if {_id} is set:
+                if {_debug} is true:
+                    send "&a[SkRPG] -------[&e%uppercase {_id}%&a]-------" to console
+                    send "&a[SkRPG] &fLoading stat &e%{_id}%" to console
+                add {_id} to {skrpg.config.database::*}
+                #
+                #Display name
+                set {_display} to yaml value "display-name" from loop-value-1
+                set {_display} to formatted {_display}
+                if {_display} is not set:
+                    set {_display} to "&c???"
+                if {_debug} is true:
+                    send "&a[SkRPG] &fLoaded display for &e%{_id}% &ras %{_display}%" to console
+                set {skrpg.config.database::%{_id}%::display-name} to {_display}
+                #
+                #Type
+                set {_type} to yaml value "type" from loop-value-1
+                if {_type} is not set:
+                    set {_type} to "permanent"
+                if {_debug} is true:
+                    send "&a[SkRPG] &fDefined &e%{_id}% &ras %uppercase {_type}%" to console
+                set {skrpg.config.database::%{_id}%::type} to {_type}
+                #
+                #Max level
+                set {_max-level} to yaml value "max-level" from loop-value-1
+                if {_max-level} is not set:
+                    set {_max-level} to 100
+                if {_debug} is true:
+                    send "&a[SkRPG] &fDefined &e%{_id}% &rmax level to &e%{_max-level}%" to console
+                set {skrpg.config.database::%{_id}%::max-level} to {_max-level}
+                #
+                #Can be negative
+                set {_can-be-negative} to yaml value "can-be-negative" from loop-value-1
+                if {_can-be-negative} is not set:
+                    set {_can-be-negative} to true
+                if {_debug} is true:
+                    send "&a[SkRPG] &fDefined &ecan-be-negative &rvalue of &e%{_id}% &rto &e%{_can-be-negative}%" to console
+                set {skrpg.config.database::%{_id}%::can-be-negative} to {_can-be-negative}
+                #
+                #Base amount
+                set {_base-amount} to yaml value "base-amount" from loop-value-1
+                if {_base-amount} is not set:
+                    set {_base-amount} to 0
+                if {_debug} is true:
+                    send "&a[SkRPG] &fDefined &ebase-amount &rvalue of &e%{_id}% &rto &e%{_base-amount}%" to console
+                set {skrpg.config.database::%{_id}%::base-amount} to {_base-amount}
+        #Call event when everything is loaded
+        call event (custom event "skrpgcompleteloading")
+        wait 1 second
+        #Reload all addons
+        #loop {skrpg.main-config::addons-loaded::*}:
+        #    make console execute command "/sk reload %{skrpg.main-config::addons-loaded::%loop-value%::path}%"
+    else:
+        send "&a[SkRPG] &c&lERROR: &cConfig does not exists. Loading aborted." to console
+        stop
+#______                _   _                 
+#|  ___|              | | (_)                
+#| |_ _   _ _ __   ___| |_ _  ___  _ __  ___ 
+#|  _| | | | '_ \ / __| __| |/ _ \| '_ \/ __|
+#| | | |_| | | | | (__| |_| | (_) | | | \__ \
+#_|  \__,_|_| |_|\___|\__|_|\___/|_| |_|___/                                    
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#
+#FUNCTION TO CHECK STATS
+#
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+function skRPGCheckStats(p: player, eventcall: boolean=true):
+
+    #
+    #Each statistic has five ways of storage enabled by default
+    #Equipment -> The amount provided by items
+    #Base -> The base amount defined in the stat config
+    #Permanent -> Amount given permanently (by command etc.)
+    #Temporary -> Amount given temporarily
+    #Custom -> Not used by my script, but you can use it if you want
+    #
+    #You can add your owns in config.yml
+    #
+    set {_uuid} to uuid of {_p}
+    loop {skrpg.config.database::*}:
+        if {_eventcall} is true:
+            set {_id} to loop-value
+            set {_values::player} to {_p}
+            set {_values::string} to loop-value
+            call event (custom event "skrpgupdatestat" with values {_values::*})
+        loop {skrpg.main-config::storage-variables::*}:
+            set {_storage} to loop-value-2
+            if {_storage} is "base":
+                #Checks the base amount
+                if {skrpg.player.database::%{_uuid}%::%loop-value-1%::base} is not set:
+                    set {skrpg.player.database::%{_uuid}%::%loop-value-1%::base} to {skrpg.config.database::%{_id}%::base-amount}
+                if {skrpg.player.database::%{_uuid}%::%loop-value-1%::base} is not equal to {skrpg.config.database::%{_id}%::base-amount}:
+                    set {skrpg.player.database::%{_uuid}%::%loop-value-1%::base} to {skrpg.config.database::%{_id}%::base-amount}
+            else:
+                if {skrpg.player.database::%{_uuid}%::%loop-value-1%::%loop-value-2%} is not set:
+                    set {skrpg.player.database::%{_uuid}%::%loop-value-1%::%loop-value-2%} to 0
+                #Check negative amounts
+                if {skrpg.config.database::%loop-value-1%::can-be-negative} is false:
+                    if {skrpg.player.database::%{_uuid}%::%loop-value-1%::%loop-value-2%} is below 0:
+                        set {skrpg.player.database::%{_uuid}%::%loop-value-1%::%loop-value-2%} to 0
+    skRPGupdateActionBar({_p})
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#
+#FUNCTION TO RETURN THE STAT AMOUNT OF A PLAYER
+#
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+function skRPGgetGlobalStatAmount(p: player, stat: text) :: integer:
+
+    set {_uuid} to uuid of {_p}
+    set {_return} to 0
+    if {skrpg.config.database::*} contains {_stat}:
+        loop {skrpg.main-config::storage-variables::*}:
+            add {skrpg.player.database::%{_uuid}%::%{_stat}%::%loop-value%} to {_return}
+    else:
+        send "&a[SkRPG] &cERROR: Stat %{_stat}% used in function skRPGgetGlobalStatAmount does not exists." to console
+    if {skrpg.config.database::%{_stat}%::can-be-negative} is false:
+        if {_return} < 0:
+            set {_return} to 0
+    if {_return} > {skrpg.config.database::%{_stat}%::max-level}:
+        set {_return} to {skrpg.config.database::%{_stat}%::max-level}
+    return {_return}
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#FUNCTION TO ADD TO A STAT
+#Do not use this for temporary stats
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+function skRPGAddStatAmount(p: player, stat: text, amount: integer, storage: text, eventcall: boolean=true):
+
+    set {_uuid} to uuid of {_p}
+    if {skrpg.config.database::*} contains {_stat}:
+        if {skrpg.main-config::storage-variables::*} does not contain {_storage}:
+            send "&a[SkRPG] &cERROR: Storage %{_storage}% used in function skRPGAddStatAmount does not exists." to console
+            stop
+        add {_amount} to {skrpg.player.database::%{_uuid}%::%{_stat}%::%{_storage}%}
+        if {skrpg.player.database::%{_uuid}%::%{_stat}%::%{_storage}%} > {skrpg.config.database::%{_stat}%::max-level}:
+            set {skrpg.player.database::%{_uuid}%::%{_stat}%::%{_storage}%} to {skrpg.config.database::%{_stat}%::max-level}
+        #Call event
+        set {_event::player} to {_p}
+        set {_event::string} to {_stat}
+        set {_event::amount} to {_amount}
+        set {_extradata::storage} to {_storage}
+        set {_extradata::operation} to "ADD"
+        call event (custom event "skrpgplayerchangestat" with values {_event::*} and data {_extradata::*})
+        skRPGCheckStats({_p}, {_eventcall})
+    else:
+        send "&a[SkRPG] &cERROR: Stat %{_stat}% used in function skRPGAddStatAmount does not exists." to console
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#FUNCTION TO REMOVE FROM A STAT
+#Do not use this for temporary stats
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+function skRPGRemoveStatAmount(p: player, stat: text, amount: integer, storage: text, eventcall: boolean=true):
+
+    set {_uuid} to uuid of {_p}
+    if {skrpg.config.database::*} contains {_stat}:
+        if {skrpg.main-config::storage-variables::*} does not contain {_storage}:
+            send "&a[SkRPG] &cERROR: Storage %{_storage}% used in function skRPGRemoveStatAmount does not exists." to console
+            stop
+        remove {_amount} from {skrpg.player.database::%{_uuid}%::%{_stat}%::%{_storage}%}
+        #Call event
+        set {_event::player} to {_p}
+        set {_event::string} to {_stat}
+        set {_event::amount} to {_amount}
+        set {_extradata::storage} to {_storage}
+        set {_extradata::operation} to "REMOVE"
+        call event (custom event "skrpgplayerchangestat" with values {_event::*} and data {_extradata::*})
+        skRPGCheckStats({_p}, {_eventcall})
+    else:
+        send "&a[SkRPG] &cERROR: Stat %{_stat}% used in function skRPGRemoveStatAmount does not exists." to console
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#FUNCTION TO SET TO A STAT
+#Do not use this for temporary stats
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+function skRPGSetStatAmount(p: player, stat: text, amount: integer, storage: text, eventcall: boolean=true):
+
+    set {_uuid} to uuid of {_p}
+    if {skrpg.config.database::*} contains {_stat}:
+        if {skrpg.main-config::storage-variables::*} does not contain {_storage}:
+            send "&a[SkRPG] &cERROR: Storage %{_storage}% used in function skRPGSetStatAmount does not exists." to console
+            stop
+        set {skrpg.player.database::%{_uuid}%::%{_stat}%::%{_storage}%} to {_amount}
+        if {skrpg.player.database::%{_uuid}%::%{_stat}%::%{_storage}%} > {skrpg.config.database::%{_stat}%::max-level}:
+            set {skrpg.player.database::%{_uuid}%::%{_stat}%::%{_storage}%} to {skrpg.config.database::%{_stat}%::max-level}
+        if {skrpg.config.database::%{_stat}%::can-be-negative} is false:
+            if {skrpg.player.database::%{_uuid}%::%{_stat}%::%{_storage}%} < 0:
+                set {skrpg.player.database::%{_uuid}%::%{_stat}%::%{_storage}%} to 0
+        #Call event
+        set {_event::player} to {_p}
+        set {_event::string} to {_stat}
+        set {_event::amount} to {_amount}
+        set {_extradata::storage} to {_storage}
+        set {_extradata::operation} to "SET"
+        call event (custom event "skrpgplayerchangestat" with values {_event::*} and data {_extradata::*})
+        skRPGCheckStats({_p}, {_eventcall})
+    else:
+        send "&a[SkRPG] &cERROR: Stat %{_stat}% used in function skRPGSetStatAmount does not exists." to console
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#FUNCTION TO RESET A STAT IN A STORAGE TYPE
+#Do not use this for temporary stats
+#If you use it with "base" as storage, it will set the amount back to base-amount
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+function skRPGResetStatStorage(p: player, stat: text, storage: text):
+
+    set {_uuid} to uuid of {_p}
+    if {skrpg.config.database::*} contains {_stat}:
+        set {_uuid} to uuid of {_p}
+        if {skrpg.main-config::storage-variables::*} does not contain {_storage}:
+            send "&a[SkRPG] &cERROR: Storage %{_storage}% used in function skRPGResetStatStorage does not exists." to console
+            stop
+        if {_storage} is "base":
+            set {skrpg.player.database::%{_uuid}%::%{_stat}%::%{_storage}%} to {skrpg.config.database::%{_stat}%::base-amount}
+        else:
+            set {skrpg.player.database::%{_uuid}%::%{_stat}%::%{_storage}%} to 0
+        #Call event
+        set {_event::player} to {_p}
+        set {_event::string} to {_stat}
+        set {_event::amount} to {_amount}
+        set {_extradata::storage} to {_storage}
+        set {_extradata::operation} to "RESET"
+        call event (custom event "skrpgplayerchangestat" with values {_event::*} and data {_extradata::*})
+        skRPGCheckStats({_p})
+    else:
+        send "&a[SkRPG] &cERROR: Stat %{_stat}% used in function skRPGResetStatStorage does not exists." to console
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#FUNCTION TO RESET A STAT GLOBALLY (IN ALL STORAGE TYPES)
+#Do not use this for temporary stats
+#All amounts will be set to 0 except for "base" which will be set as specified in the configs
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+function skRPGGlobalResetStatStorage(p: player, stat: text):
+
+    set {_uuid} to uuid of {_p}
+    if {skrpg.config.database::*} contains {_stat}:
+        set {_uuid} to uuid of {_p}
+        loop {skrpg.main-config::storage-variables::*}:
+            if loop-value is "base":
+                set {skrpg.player.database::%{_uuid}%::%{_stat}%::%loop-value%} to {skrpg.config.database::%{_stat}%::base-amount}
+            else:
+                set {skrpg.player.database::%{_uuid}%::%{_stat}%::%loop-value%} to 0
+        skRPGCheckStats({_p})
+    else:
+        send "&a[SkRPG] &cERROR: Stat %{_stat}% used in function skRPGResetStatStorage does not exists." to console  
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#FUNCTION TO LOAD YOUR ADDON
+#Before using any other function with your skripts please
+#register your addons in order to track all informations
+#from the main skript and extra things.
+#Set path as the path to find your addon (exemple: plugins/Skript/scripts/myscript.sk)
+#
+#/!\ This function is only useful for developping addons !*
+#/!\ Use this function with "skrpg complete loading" event
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+function skRPGLoadAddon(addon: text, path: string):
+
+    if {skrpg.main-config::addons-loaded::*} contains {_addon}:
+        send "&a[SkRPG] &e[API] &cERROR: Tried to load addon %{_addon}% but it is alredy loaded !" to console
+        stop
+    else:
+        if script {_path} is not loaded:
+            send "&a[SkRPG] &e[API] &cERROR: Path %{_path}% for addon %{_addon}% is invalid !" to console
+            stop
+        add {_addon} to {skrpg.main-config::addons-loaded::*}
+        add {_addon} to {skrpg.main-config::stats-from-addons::*}
+        add {_addon} to {skrpg.main-config::storages-from-addons::*}
+        set {skrpg.main-config::addons-loaded::%{_addon}%::path} to {_path}
+        send "&a[SkRPG] &e[API] &eAddon &b%{_addon}% &eloaded !" to console   
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#FUNCTION TO REGISTER EXTRA STORAGE TYPES
+#Useful to create addons which needs to load extra storage
+#without needing to write manually on the configs
+#
+#/!\ This function is only useful for developping addons !*
+#/!\ Use this function with "skrpg complete loading" event
+#If you're not creating an addon I suggest you to wirte
+#directly in the configs. No need to use this.
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+function skRPGLoadExtraStorage(addon: text, storage: text):
+
+    if {skrpg.main-config::addons-loaded::*} contains {_addon}:
+        if {skrpg.main-config::storage-variables::*} contains {_storage}:
+            send "&a[SkRPG] &e[API] &cERROR: Storage type %{_storage}% alredy exists." to console
+            stop
+        add {_storage} to {skrpg.main-config::storage-variables::*}
+        add {_storage} to {skrpg.main-config::storages-from-addons::%{_storage}%::*}
+        send "&a[SkRPG] &e[API] &aAdded extra storage type &e%{_storage}%" to console
+    else:
+        send "&a[SkRPG] &e[API] &cERROR: Addon &e%{_addon}% &cnot loaded ! Use skRPGLoadAddon(<addon>, <path>) first." to console
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#FUNCTION TO REGISTER EXTRA STATS
+#Useful to create addons which needs to load extra stats
+#without needing to write manually on the configs
+#
+#/!\ This function is only useful for developping addons !*
+#/!\ Use this function with "skrpg complete loading" event
+#If you're not creating an addon I suggest you to wirte
+#directly in the configs. No need to use this.
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+function skRPGLoadExtraStat(addon: text, stat: text):
+
+    if {skrpg.main-config::addons-loaded::*} contains {_addon}:
+        if {skrpg.config.database::*} contains {_stat}:
+            send "&a[SkRPG] &e[API] &cERROR: Stat %{_stat}% alredy exists." to console
+            stop
+        add {_stat} to {skrpg.config.database::*}
+        add {_stat} to {skrpg.main-config::stats-from-addons::%{_addon}%::*}
+        send "&a[SkRPG] &e[API] &aAdded extra stat &e%{_stat}%" to console
+    else:
+        send "&a[SkRPG] &e[API] &cERROR: Addon &e%{_addon}% &cnot loaded ! Use skRPGLoadAddon(<addon>, <path>) first." to console
+
+function skRPGLoadExtraStatParameters(addon: text, stat: text, parameterName: objects, parameterValue: objects):
+    if {skrpg.main-config::addons-loaded::*} contains {_addon}:
+        if {skrpg.main-config::stats-from-addons::%{_addon}%::*} does not contain {_stat}:
+            send "&a[SkRPG] &e[API] &cERROR: Stat %{_stat}% does not exists or is not registered." to console
+            stop
+        loop {_parameterName::*}:
+            set {_i} to loop-index
+            set {_paramvalue} to {_parameterValue::%{_i}%}
+            if {skrpg.main-config::debug} is true:
+                send "&a[SkRPG] &e[API] &eLoading parameter name &a%loop-value% &ewith value &a%{_paramvalue}% &efor stat &a%{_stat}%" to console
+            set {skrpg.config.database::%{_stat}%::%loop-value%} to {_paramvalue}
+    else:
+        send "&a[SkRPG] &e[API] &cERROR: Addon &e%{_addon}% &cnot loaded ! Use skRPGLoadAddon(<addon>, <path>) first." to console
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#
+#WHILE PLAYER IS CONNECTED -> CHECK STATS
+#Chance this in config.yml
+#
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+on join:
+    #Check stats (refresh-time)
+    if {skrpg.main-config::refresh-time} is not equal to 0 seconds:
+        while player is online:
+            skRPGCheckStats(player)
+            #if {skrpg.main-config::debug} is true:
+            #    send "&a[SkRPG] &fRechecking stats for &e%player%" to console
+            wait {skrpg.main-config::refresh-time}
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#
+#SET ALL VARIABLES ON FIRST JOIN
+#
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+on first join:
+    skRPGCheckStats(player)
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#COMMANDS
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+command /skrpg <text=help> [<text>] [<text>] [<text>] [<text>]:
+    permission: skrpg.admin
+    usage: &e/skrpg help
+    trigger:
+        if arg 1 is "info":
+            send "&3<----- &eHelp menu &3----->"
+            send "&aSkRPG &emade by &bPalgia"
+            send "&eVersion: &f{@version}"
+            if {skrpg.main-config::addons-loaded::*} is not set:
+                set {_list::*} to "&c❌"
+            else:
+                set {_list::*} to {skrpg.main-config::addons-loaded::*}               
+            send "&eAddons loaded: &f%{_list::*}%"
+            send "&3<-------------------->"
+        if arg 1 is "help":
+            send "&3<----- &eHelp menu &3----->"
+            send "&b/skrpg seestats <player> <true/false> <stat>"
+            send "   &fAllows knowing a player's statistics."
+            send "   &fIndicating ""true"" provides more details."
+            send "&b/skrpg addstat <player> <stat> <amount> [<storage>]"
+            send "   &fGive the specified amount to a stat"
+            send "   &fof a player. Default storage: permanent"
+            send "&b/skrpg removestat <player> <stat> <amount> [<storage]>"
+            send "   &fRemove the specified amount from a stat"
+            send "   &fof a player. Default storage: permanent"
+            send "&b/skrpg setstat <player> <stat> <amount> [<storage]>"
+            send "   &fDefine the amount of a stat"
+            send "   &fDefault storage: permanent"
+            send "&3<-------------------->"
+
+        if arg 1 is "seestats":
+            if arg 2 is set:
+                set {_p} to arg 2 parsed as player
+                if {_p} is set:
+                    if arg 3 is set:
+                        if arg 3 is "true":
+                            set {_detailled} to true
+                    if arg 4 is set:
+                        send "&3<----- &eStat of &a%{_p}% &3----->"
+                        set {_amount} to skRPGgetGlobalStatAmount({_p}, arg 4)
+                        if {_amount} is not set:
+                            set {_amount} to 0
+                        if {_amount} is below 0:
+                            set {_text} to "&c%{_amount}%"
+                        else:
+                            set {_text} to "&a+%{_amount}%"
+                        send "%{skrpg.config.database::%arg 4%::display-name}%&8: %{_text}%"
+                        if {_detailled} is true:
+                            loop {skrpg.main-config::storage-variables::*}:
+                                send "    &8- &e%uppercase loop-value%: &f%{skrpg.player.database::%uuid of {_p}%::%arg 4%::%loop-value%}%"
+                    else:
+                        send "&3<----- &eStats of &a%{_p}% &3----->"
+                        loop {skrpg.config.database::*}:
+                            set {_amount} to skRPGgetGlobalStatAmount({_p}, loop-value)
+                            if {_amount} is not set:
+                                set {_amount} to 0
+                            if {_amount} is below 0:
+                                set {_text} to "&c%{_amount}%"
+                            else:
+                                set {_text} to "&a+%{_amount}%"
+                            send "%{skrpg.config.database::%loop-value%::display-name}%&8: %{_text}%"
+                            if {_detailled} is true:
+                                loop {skrpg.main-config::storage-variables::*}:
+                                    send "    &8- &e%uppercase loop-value-2%: &f%{skrpg.player.database::%uuid of {_p}%::%loop-value-1%::%loop-value-2%}%"
+                else:
+                    send "&a[SkRPG] &cThis player does not exists."
+            else:
+                send "&a[SkRPG] &cYou need to set a player as the second argument."
+        if arg 1 is "addstat":
+            if arg 2 is set:
+                set {_p} to arg 2 parsed as player
+                if {_p} is set:
+                    if arg 3 is set:
+                        if {skrpg.config.database::*} contains arg 3:
+                            set {_stat} to arg 3
+                            if arg 4 is set:
+                                set {_amount} to arg 4 parsed as integer
+                                if {_amount} is set:
+                                    if arg 5 is set:
+                                        set {_storage} to arg 5
+                                    else:
+                                        set {_storage} to "permanent"
+                                    skRPGAddStatAmount({_p}, {_stat}, {_amount}, {_storage})
+                                    send "&a[SkRPG] &eAdded &a%{_amount}% &eto stat &a%{_stat}% &eof &a%{_p}% &e! &7(Storage: %{_storage}%)"
+                                else:
+                                    send "&a[SkRPG] &cAmount argument given not valid"             
+                            else:
+                                send "&a[SkRPG] &cAmount argument missing in position 4"                               
+                        else:
+                            send "&a[SkRPG] &cStat %arg 3% does not exists !"
+                    else:
+                        send "&a[SkRPG] &cStat argument missing in position 3"
+        if arg 1 is "removestat":
+            if arg 2 is set:
+                set {_p} to arg 2 parsed as player
+                if {_p} is set:
+                    if arg 3 is set:
+                        if {skrpg.config.database::*} contains arg 3:
+                            set {_stat} to arg 3
+                            if arg 4 is set:
+                                set {_amount} to arg 4 parsed as integer
+                                if {_amount} is set:
+                                    if arg 5 is set:
+                                        set {_storage} to arg 5
+                                    else:
+                                        set {_storage} to "permanent"
+                                    skRPGRemoveStatAmount({_p}, {_stat}, {_amount}, {_storage})
+                                    send "&a[SkRPG] &eRemoved &a%{_amount}% &efrom stat &a%{_stat}% &eof &a%{_p}% &e! &7(Storage: %{_storage}%)"
+                                else:
+                                    send "&a[SkRPG] &cAmount argument given not valid"             
+                            else:
+                                send "&a[SkRPG] &cAmount argument missing in position 4"                               
+                        else:
+                            send "&a[SkRPG] &cStat %arg 3% does not exists !"
+                    else:
+                        send "&a[SkRPG] &cStat argument missing in position 3"
+        if arg 1 is "setstat":
+            if arg 2 is set:
+                set {_p} to arg 2 parsed as player
+                if {_p} is set:
+                    if arg 3 is set:
+                        if {skrpg.config.database::*} contains arg 3:
+                            set {_stat} to arg 3
+                            if arg 4 is set:
+                                set {_amount} to arg 4 parsed as integer
+                                if {_amount} is set:
+                                    if arg 5 is set:
+                                        set {_storage} to arg 5
+                                    else:
+                                        set {_storage} to "permanent"
+                                    skRPGSetStatAmount({_p}, {_stat}, {_amount}, {_storage})
+                                    send "&a[SkRPG] &eSet &a%{_stat}% &eof &a%{_p}% &eto &a%{_amount}% &e! &7(Storage: %{_storage}%)"
+                                else:
+                                    send "&a[SkRPG] &cAmount argument given not valid"             
+                            else:
+                                send "&a[SkRPG] &cAmount argument missing in position 4"                               
+                        else:
+                            send "&a[SkRPG] &cStat %arg 3% does not exists !"
+                    else:
+                        send "&a[SkRPG] &cStat argument missing in position 3"
+        if arg 1 is "statlist":
+            send "&3<----- &eStats by &aSkRPG &7(%size of {skrpg.config.database::*}%) &3----->"
+            send "&e%{skrpg.config.database::*}%"
+            if {skrpg.main-config::stats-from-addons::*} is set:
+                send "&3<----- &eStats by &aAddons &3----->"
+                loop {skrpg.main-config::stats-from-addons::*}:
+                    send "&a%loop-value%: &e%{skrpg.main-config::stats-from-addons::%loop-value%::*}%"
+        if arg 1 is "storagelist":
+            send "&3<----- &eStorages by &aSkRPG &7(%size of {skrpg.main-config::storage-variables::*}%) &3----->"
+            send "&e%{skrpg.main-config::storage-variables::*}%"
+            if {skrpg.main-config::storages-from-addons::*} is set:
+                send "&3<----- &eStorages by &aAddons &3----->"
+                loop {skrpg.main-config::storages-from-addons::*}:
+                    send "&a%loop-value%: &e%{skrpg.main-config::storages-from-addons::%loop-value%::*}%"
+
+on tab complete of "/skrpg":
+    set tab completions for position 1 to "statlist" and "storagelist" and "info" and "help" and "seestats" and "setstat" and "removestat" and "addstat"
+    if tab arg-1 is "setstat" or "removestat" or "addstat":
+        set {_players::*} to all players
+        set tab completions for position 2 to {_players::*}
+        if tab arg-2 is set:
+            set tab completions for position 3 to {skrpg.config.database::*}
+            if tab arg-3 is set:
+                set tab completions for position 4 to 1 and 5 and 10 and 15 and 20
+                if tab arg-4 is set:
+                    set tab completions for position 5 to {skrpg.main-config::storage-variables::*}
+    else if tab arg-1 is "seestats":
+        set {_players::*} to all players
+        set tab completions for position 2 to {_players::*}
+        if tab arg-2 is set:
+            set tab completions for position 3 to "true" and "false"
+            if tab arg-3 is set:
+                set tab completions for position 4 to {skrpg.config.database::*}            
+                    
+#
+#UPDATE STATS OF PLAYER
+#You can configure this in config.yml
+#
+#death
+on death of player:
+    {skrpg.main-config::update-events::*} contains "death"
+    wait 1 tick
+    skRPGCheckStats(victim, true)
+#kill
+on death:
+    attacker is a player
+    {skrpg.main-config::update-events::*} contains "kill"
+    wait 1 tick
+    skRPGCheckStats(attacker, true)
+#drop
+on drop:
+    {skrpg.main-config::update-events::*} contains "drop"
+    wait 1 tick
+    skRPGCheckStats(player, true)
+#pickup
+on pickup:
+    {skrpg.main-config::update-events::*} contains "pickup"
+    wait 1 tick
+    skRPGCheckStats(player, true)
+#respawn
+on respawn:
+    {skrpg.main-config::update-events::*} contains "respawn"
+    wait 1 tick
+    skRPGCheckStats(player, true)
+#equip-armor
+on armor change:
+    {skrpg.main-config::update-events::*} contains "equip-armor"
+    skRPGCheckStats(player, true)
+#tool-change
+on tool change:
+    {skrpg.main-config::update-events::*} contains "tool-change"
+    wait 1 tick
+    skRPGCheckStats(player, true)
+
+#
+#MANA REGEN
+#
+on join:
+    if {skrpg.main-config::is-mana-enabled} is true:
+        while player is online:
+            skRPGAddStatAmount(player, "mana", {skrpg.main-config::mana-regen-amount}, "permanent", true)
+            #This is the Wisdom part
+            #The time between each regen will be reduced or increased
+            #based of the player's wisdom
+            set {_wait} to {skrpg.main-config::mana-regen-time}
+            set {_wisdom} to skRPGgetGlobalStatAmount(player, "wisdom")
+            set {_time} to "%{_wisdom}/50% seconds" parsed as timespan
+            remove {_time} from {_wait}
+            wait {_wait}
+
+#
+#ACTION BAR
+#
+on join:
+    if {skrpg.main-config::action-bar-enabled} is true:
+        while player is online:
+            skRPGupdateActionBar(player)
+            wait 1 second
+
+function skRPGupdateActionBar(p: player):
+    set {_action-bar} to {skrpg.main-config::action-bar-content}
+    #Replace by placeholders
+    replace all "{health}" with "%health of {_p}%" in {_action-bar}
+    replace all "{max-health}" with "%max health of {_p}%" in {_action-bar}
+    loop {skrpg.config.database::*}:
+        if "%{_action-bar}%" contains "%loop-value%":
+            replace all "{%loop-value%-amount}" with "%skRPGgetGlobalStatAmount({_p}, loop-value)%" in {_action-bar} 
+            replace all "{%loop-value%-maxamount}" with "%{skrpg.config.database::%loop-value%::max-level}%" in {_action-bar}  
+    send action bar formatted {_action-bar} to {_p}
+
+#
+#CUSTOM HEALTH REGEN
+#
+on join:
+    if {skrpg.main-config::custom-health-regen-enabled} is true:
+        while player is online:
+            set {_vitality} to skRPGgetGlobalStatAmount(player, "vitality")
+            heal player by {skrpg.main-config::health-regen-amount}+{_vitality}
+            #This is the Wisdom part
+            #The time between each regen will be reduced or increased
+            #based of the player's wisdom
+            set {_wait} to {skrpg.main-config::health-regen-time}
+            set {_regeneration} to skRPGgetGlobalStatAmount(player, "regeneration")
+            set {_time} to "%{_regeneration}/30% seconds" parsed as timespan
+            remove {_time} from {_wait}
+            wait {_wait}
+# _____           _                                         _       
+#/  __ \         | |                                       | |      
+#| /  \/_   _ ___| |_ ___  _ __ ___     _____   _____ _ __ | |_ ___ 
+#| |   | | | / __| __/ _ \| '_ ` _ \   / _ \ \ / / _ \ '_ \| __/ __|
+#| \__/\ |_| \__ \ || (_) | | | | | | |  __/\ V /  __/ | | | |_\__ \
+# \____/\__,_|___/\__\___/|_| |_| |_|  \___| \_/ \___|_| |_|\__|___/                                                                                                                                     
+#
+#CUSTOM EVENTS (Needs skript-reflect)
+#---------------------------------------------------------------
+#This event is called when the plugin has finished
+#loading all files and configs. You can use this to load
+#extra information (if you want to create addons for example)
+#No arguments needed.
+custom event "skrpgcompleteloading":
+    pattern: skrpg complete loading 
+#---------------------------------------------------------------
+#This event is called when stats are updated
+#on a player.
+#You can get the player, and the stat with the string argument.
+#--Event-values
+#player = The targeted player
+#string = The involved stat
+custom event "skrpgupdatestat":
+    event-values: player, string
+    pattern: skrpg update stat
+#---------------------------------------------------------------
+#This event is called when stats of a player are changed.
+#--Event-values:
+#player = The targeted player
+#string = The involved stat
+#integer = The amount removed/given etc.
+#--Extra data:
+#operation = The operation used (ADD, REMOVE, SET or RESET)
+#storage = The storage type used
+custom event "skrpgplayerchangestat":
+    event-values: player, string, integer
+    pattern: skrpg player change stat
