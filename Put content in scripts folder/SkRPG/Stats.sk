@@ -36,6 +36,7 @@ on heal:
 
 #Lifesteal
 on damage:
+    event is not cancelled
     set {_stat} to skRPGgetGlobalStatAmount(attacker, "lifesteal")
     chance of {_stat}%:
         set {_heal} to damage/3
@@ -52,6 +53,7 @@ on damage:
 
 #Crit chance & Crit damage
 on damage:
+    event is not cancelled
     set {_stat} to skRPGgetGlobalStatAmount(victim, "crit_chance")
     chance of {_stat}%:
         set {_crit-damage} to skRPGgetGlobalStatAmount(victim, "crit_damage")
@@ -107,6 +109,7 @@ on block damage:
 #True damage
 #Reduce healh of victim without taking in count armor, potion effects...
 on damage:
+    event is not cancelled
     damage cause is attack or projectile
     attacker is set
     event is not cancelled
