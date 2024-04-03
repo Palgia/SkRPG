@@ -221,8 +221,8 @@ function skRPGCheckStats(p: player, eventcall: boolean=true):
     #
     set {_uuid} to uuid of {_p}
     loop {skrpg.config.database::*}:
+        set {_id} to loop-value
         if {_eventcall} is true:
-            set {_id} to loop-value
             set {_values::player} to {_p}
             set {_values::string} to loop-value
             call event (custom event "skrpgupdatestat" with values {_values::*})
