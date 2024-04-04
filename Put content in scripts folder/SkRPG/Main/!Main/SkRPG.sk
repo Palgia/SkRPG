@@ -754,6 +754,12 @@ on join:
             set {_time} to "%{_regeneration}/30% seconds" parsed as timespan
             remove {_time} from {_wait}
             wait {_wait}
+
+#
+#HEAL PLAYER ON RESPAWN
+#
+on respawn:
+    heal player
 # _____           _                                         _       
 #/  __ \         | |                                       | |      
 #| /  \/_   _ ___| |_ ___  _ __ ___     _____   _____ _ __ | |_ ___ 
