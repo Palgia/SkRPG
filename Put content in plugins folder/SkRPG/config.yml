@@ -1,5 +1,5 @@
 #Prints informations on the console.
-debug: false
+debug: true
 
 #Represents the refresh interval of the players' statistics to continuously check the applied amounts. 
 #Indicating 0 disables this.
