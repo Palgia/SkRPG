@@ -5,12 +5,14 @@
 
 #Strength
 on damage:
+    event is not cancelled
     damage cause is attack or projectile
     set {_stat} to skRPGgetGlobalStatAmount(attacker, "strength")
     add {_stat} to damage
 
 #Defense
 on damage:
+    event is not cancelled
     set {_stat} to skRPGgetGlobalStatAmount(victim, "defense")
     remove {_stat} from damage
 
@@ -32,13 +34,17 @@ on skrpg update stat:
 #Vitality
 on heal:
     set {_stat} to skRPGgetGlobalStatAmount(player, "vitality")
-    add {_stat} to heal amount
+    add {_stat}/3 to heal amount
 
 #Lifesteal
 on damage:
     event is not cancelled
     set {_stat} to skRPGgetGlobalStatAmount(attacker, "lifesteal")
     chance of {_stat}%:
+        set {_cooldown} to difference between {skrpg.stat-cooldown::%uuid of attacker%::lifesteal} and now
+        if {_cooldown} is less than 4 seconds:
+            stop
+        set {skrpg.stat-cooldown::%uuid of attacker%::lifesteal} to now
         set {_heal} to damage/3
         heal attacker by {_heal}
         send "<##f60e57>💔 &c+%{_heal}% HP <##f60e57>from lifesteal !" to attacker
@@ -48,6 +54,10 @@ on damage:
     attacker is set
     set {_stat} to skRPGgetGlobalStatAmount(victim, "dodge")
     chance of {_stat}%:
+        set {_cooldown} to difference between {skrpg.stat-cooldown::%uuid of victim%::dodge} and now
+        if {_cooldown} is less than 7 seconds:
+            stop
+        set {skrpg.stat-cooldown::%uuid of victim%::dodge} to now
         set damage to 0
         send "<##c2d1ce>💨 You dodged the attack !" to victim
 

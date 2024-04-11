@@ -1,0 +1,141 @@
+
+import:
+    io.lumine.mythic.bukkit.MythicBukkit
+    io.lumine.mythic.core.mobs.ActiveMob
+
+on load:
+
+    if yaml file "plugins/SkRPGElementalAddon/config.yml" exists:
+        #Unload everything just to be sure
+        loop all of the currently loaded yaml files:
+            unload yaml loop-value-1
+        #Clearing everything
+        delete {skrpgelementaladdon.main-config::*}
+        delete {skrpgelementaladdon.config.database::*}
+        #
+        #Config loading
+        #
+        send "&a[SkRPGElementalAddon] &fLoading config..." to console
+        load yaml "plugins/SkRPGElementalAddon/config.yml" as "config"
+
+        #remove-damage-if-weak
+        set {_remove-damage-if-weak} to yaml value "remove-damage-if-weak" from "config"
+        if {_remove-damage-if-weak} is set:
+            set {skrpgelementaladdon.main-config::remove-damage-if-weak} to {_remove-damage-if-weak}
+        else:
+            set {skrpgelementaladdon.main-config::remove-damage-if-weak} to true
+
+        #Load all mobs
+        loop yaml node keys "mobs" from "config":
+            set {_mythic_id} to yaml value "%loop-node%.mythic_id" from "config"
+            if {_mythic_id} is set:
+                #Register mythic_id
+                add {_mythic_id} to {skrpgelementaladdon.config.database::*}
+                #Register weaknesses
+                set {_weaknesses::*} to yaml list "%loop-node%.weaknesses" from "config"
+                if {_weaknesses::*} is set:
+                    loop {_weaknesses::*}:
+                        set {_split::*} to {_weaknesses::%loop-index%} split by ":"
+                        #Register weakness
+                        add {_split::1} to {skrpgelementaladdon.config.database::%{_mythic_id}%::weaknesses::*}
+                        #Check if a modifier is set
+                        if {_split::2} is set:
+                            set {_int} to "%{_split::2}%" parsed as integer
+                            set {skrpgelementaladdon.config.database::%{_mythic_id}%::weaknesses::%{_split::1}%::modifier} to {_int}
+                #Register defenses
+                set {_defenses::*} to yaml list "%loop-node%.defenses" from "config"
+                if {_defenses::*} is set:
+                    loop {_defenses::*}:
+                        set {_split::*} to {_defenses::%loop-index%} split by ":"
+                        #Register weakness
+                        add {_split::1} to {skrpgelementaladdon.config.database::%{_mythic_id}%::defenses::*}
+                        #Check if a modifier is set
+                        if {_split::2} is set:
+                            set {_int} to "%{_split::2}%" parsed as integer
+                            set {skrpgelementaladdon.config.database::%{_mythic_id}%::defenses::%{_split::1}%::modifier} to {_int}
+                #Register immunities
+                set {_immunities::*} to yaml list "%loop-node%.immunities" from "config"
+                if {_immunities::*} is set:
+                    add {_immunities::*} to {skrpgelementaladdon.config.database::%{_mythic_id}%::immunities::*}
+    else:
+        send "&a[SkRPGElementalAddon] &cConfig file not found. Loading aborted."
+
+#
+#REGISTER NEW STATS
+#
+on skrpg complete loading:
+    if script "SkRPG/Main/!Main/SkRPG.sk" is loaded:
+        if script "SkRPG/Main/Addons/SkRPGItemsAddon.sk" is loaded:
+            skRPGLoadAddon("SkRPGElementalAddon", "SkRPG/Main/Addons/SkRPGElementalAddon.sk")
+
+            #Load statistics
+            #EARTH DAMAGE
+            skRPGLoadExtraStat("SkRPGElementalAddon", "EARTH_DAMAGE")
+            add "display-name" and "type" and "max-level" and "base-amount" and "can-be-negative" to {_param-names::*}
+            add "<##3cc502>🍁 Earth damage" and "PERMANENT" and 999 and 0  and true to {_param-values::*}       
+            skRPGLoadExtraStatParameters("SkRPGElementalAddon", "EARTH_DAMAGE", {_param-names::*}, {_param-values::*})
+            #FIRE DAMAGE
+            skRPGLoadExtraStat("SkRPGElementalAddon", "FIRE_DAMAGE")
+            add "display-name" and "type" and "max-level" and "base-amount" and "can-be-negative" to {_param-names::*}
+            add "<##fd8617>🔥 Fire damage" and "PERMANENT" and 999 and 0  and true to {_param-values::*}       
+            skRPGLoadExtraStatParameters("SkRPGElementalAddon", "FIRE_DAMAGE", {_param-names::*}, {_param-values::*})
+            #WATER DAMAGE
+            skRPGLoadExtraStat("SkRPGElementalAddon", "WATER_DAMAGE")
+            add "display-name" and "type" and "max-level" and "base-amount" and "can-be-negative" to {_param-names::*}
+            add "<##68fdf8>&l💧<##68fdf8> Water damage" and "PERMANENT" and 999 and 0  and true to {_param-values::*}       
+            skRPGLoadExtraStatParameters("SkRPGElementalAddon", "WATER_DAMAGE", {_param-names::*}, {_param-values::*})
+            #THUNDER DAMAGE
+            skRPGLoadExtraStat("SkRPGElementalAddon", "THUNDER_DAMAGE")
+            add "display-name" and "type" and "max-level" and "base-amount" and "can-be-negative" to {_param-names::*}
+            add "<##f1fe7c>🌩 Thunder damage" and "PERMANENT" and 999 and 0  and true to {_param-values::*}       
+            skRPGLoadExtraStatParameters("SkRPGElementalAddon", "THUNDER_DAMAGE", {_param-names::*}, {_param-values::*})
+            #LIGHT DAMAGE
+            skRPGLoadExtraStat("SkRPGElementalAddon", "LIGHT_DAMAGE")
+            add "display-name" and "type" and "max-level" and "base-amount" and "can-be-negative" to {_param-names::*}
+            add "<##fef8c7>✨ Light damage" and "PERMANENT" and 999 and 0  and true to {_param-values::*}       
+            skRPGLoadExtraStatParameters("SkRPGElementalAddon", "LIGHT_DAMAGE", {_param-names::*}, {_param-values::*})
+            #DARKNESS DAMAGE
+            skRPGLoadExtraStat("SkRPGElementalAddon", "DARKNESS_DAMAGE")
+            add "display-name" and "type" and "max-level" and "base-amount" and "can-be-negative" to {_param-names::*}
+            add "<##3d0165>🌙 Darkness damage" and "PERMANENT" and 999 and 0  and true to {_param-values::*}       
+            skRPGLoadExtraStatParameters("SkRPGElementalAddon", "DARKNESS_DAMAGE", {_param-names::*}, {_param-values::*})
+
+        else:
+            send "&a[SkRPGElementalAddon] &cAddon not loaded ! You need to install SkRPGItemsAddon !" to console
+    else:
+        send "&a[SkRPGElementalAddon] &cAddon not loaded ! You need to install SkRPG !" to console
+
+#
+#ELEMENTAL DAMAGE CALCULATION
+#
+on damage of living entity:
+    if attacker is a player:
+        set {_mmAPI} to instance of plugin "MythicMobs"
+        set {_mmInstance} to {_mmAPI}.getMobManager().getMythicMobInstance(victim)
+        if {_mmInstance} is not null:
+            #Get MythicMob Internal name
+            set {_mythic_id} to {_mmInstance}.getType().getInternalName()
+            #Check immunities
+            if {skrpgelementaladdon.config.database::%{_mythic_id}%::immunities::*} is set:
+                loop {skrpgelementaladdon.config.database::%{_mythic_id}%::immunities::*}:
+                    set {_element_stat} to skRPGgetGlobalStatAmount(attacker, "%loop-value%_DAMAGE") 
+                    if {_element_stat} > 0:
+                        cancel event
+                        stop          
+            #Check weaknesses
+            if {skrpgelementaladdon.config.database::%{_mythic_id}%::weaknesses::*} is set:
+                loop {skrpgelementaladdon.config.database::%{_mythic_id}%::weaknesses::*}:
+                    set {_element_stat} to skRPGgetGlobalStatAmount(attacker, "%loop-value%_DAMAGE")
+                    add {_element_stat} to damage
+                    #If modifier is set:
+                    if {skrpgelementaladdon.config.database::%{_mythic_id}%::weaknesses::%loop-value%::modifier} is set:
+                        add {skrpgelementaladdon.config.database::%{_mythic_id}%::weaknesses::%loop-value%::modifier} to damage
+            #Check defenses
+            if {skrpgelementaladdon.main-config::remove-damage-if-weak} is true:
+                if {skrpgelementaladdon.config.database::%{_mythic_id}%::defenses::*} is set:
+                    loop {skrpgelementaladdon.config.database::%{_mythic_id}%::defenses::*}:
+                        set {_element_stat} to skRPGgetGlobalStatAmount(attacker, "%loop-value%_DAMAGE")
+                        remove {_element_stat} from damage
+                        #If modifier is set:
+                        if {skrpgelementaladdon.config.database::%{_mythic_id}%::defenses::%loop-value%::modifier} is set:
+                            remove {skrpgelementaladdon.config.database::%{_mythic_id}%::defenses::%loop-value%::modifier} from damage

@@ -744,13 +744,14 @@ function skRPGupdateActionBar(p: player):
 on join:
     if {skrpg.main-config::custom-health-regen-enabled} is true:
         while player is online:
-            set {_vitality} to skRPGgetGlobalStatAmount(player, "vitality")
-            heal player by {skrpg.main-config::health-regen-amount}+{_vitality}
-            #This is the Wisdom part
-            #The time between each regen will be reduced or increased
-            #based of the player's wisdom
-            set {_wait} to {skrpg.main-config::health-regen-time}
-            set {_regeneration} to skRPGgetGlobalStatAmount(player, "regeneration")
+            if health of player > 0:
+                set {_vitality} to skRPGgetGlobalStatAmount(player, "vitality")
+                heal player by {skrpg.main-config::health-regen-amount}+{_vitality}
+                #This is the Wisdom part
+                #The time between each regen will be reduced or increased
+                #based of the player's wisdom
+                set {_wait} to {skrpg.main-config::health-regen-time}
+                set {_regeneration} to skRPGgetGlobalStatAmount(player, "regeneration")
             set {_time} to "%{_regeneration}/30% seconds" parsed as timespan
             remove {_time} from {_wait}
             wait {_wait}
