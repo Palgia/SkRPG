@@ -461,6 +461,20 @@ function skRPGLoadExtraStatParameters(addon: text, stat: text, parameterName: ob
             set {skrpg.config.database::%{_stat}%::%loop-value%} to {_paramvalue}
     else:
         send "&a[SkRPG] &e[API] &cERROR: Addon &e%{_addon}% &cnot loaded ! Use skRPGLoadAddon(<addon>, <path>) first." to console
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#FUNCTION TO DISABLE PLAYER'S ACTION BAR FOR AN AMOUNT OF TIME
+#Useful if you want to send messages without overriding the current action bar
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+function skRPGDisableActionBarDuration(p: player, time: timespan):
+
+    set {_uuid} to uuid of {_p}
+    set {skrpg.action-bar.is-disabled::%{_uuid}%} to true
+    wait {_time}
+    set {skrpg.action-bar.is-disabled::%{_uuid}%} to false
+#Enables the actionbar back if player disconnects
+on quit:
+    if {skrpg.action-bar.is-disabled::%uuid of player%} is true:
+        set {skrpg.action-bar.is-disabled::%uuid of player%} to false
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #
@@ -728,6 +742,9 @@ on join:
             wait 1 second
 
 function skRPGupdateActionBar(p: player):
+    set {_uuid} to uuid of {_p}
+    if {skrpg.action-bar.is-disabled::%{_uuid}%} is true:
+        stop
     set {_action-bar} to {skrpg.main-config::action-bar-content}
     #Replace by placeholders
     replace all "{health}" with "%health of {_p}%" in {_action-bar}
