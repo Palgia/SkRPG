@@ -82,21 +82,33 @@ on tab complete of "/skrpgitemsaddon":
         if tab arg-2 is set:
             set tab completions for position 3 to 5 and 10 and 15 and 20 and 30 and 35 and 40
 
+#
+#Function to return a formatted stat line for a lore to use freely
+#
+function skRPGItemsAddonReturnStatLine(stat: string, amount: integer) :: string:
+    if {_amount} is below 0:
+        set {_text} to "&c%{_amount}%"
+    else:
+        set {_text} to "&a+%{_amount}%"
+    return "%formatted {skrpg.config.database::%{_stat}%::display-name}%&8: %{_text}%"
+
 
 #
 #Function to apply a stat on a item
 #Returns the item
+#Set addinlore to FALSE if you don't want to show the stat in the lore. Doesn't work if the stat is alredy applied.
 #
-function skRPGItemsAddonSetStat(i: item, stat: string, amount: integer) :: item:
+function skRPGItemsAddonSetStat(i: item, stat: string, amount: integer, addinlore: boolean=true) :: item:
     if {skrpg.config.database::*} contains {_stat}:
-        set int tag "tag;SKRPGITEMS-%{_stat}%" of nbt compound of {_i} to {_amount}
+        set int tag "SKRPGITEMS-%{_stat}%" of custom nbt of {_i} to {_amount}
         set {_lore::*} to lore of {_i}
         if "%uncolored {_lore::*}%" does not contain uncolored "%{skrpg.config.database::%{_stat}%::display-name}%: ":
             if {_amount} is below 0:
                 set {_text} to "&c%{_amount}%"
             else:
                 set {_text} to "&a+%{_amount}%"
-            add "%formatted {skrpg.config.database::%{_stat}%::display-name}%&8: %{_text}%" to {_lore::*}
+            if {_addinlore} is true:
+                add "%formatted {skrpg.config.database::%{_stat}%::display-name}%&8: %{_text}%" to {_lore::*}
             set {_i} to {_i} with lore {_lore::*}
         else:
             loop {_lore::*}:
@@ -115,12 +127,12 @@ function skRPGItemsAddonSetStat(i: item, stat: string, amount: integer) :: item:
 #
 function skRPGItemsAddonRemoveStatAmount(i: item, stat: string, amount: integer) :: item:
     if {skrpg.config.database::*} contains {_stat}:
-        set {_int} to int tag "tag;SKRPGITEMS-%{_stat}%" of nbt compound of {_i}
+        set {_int} to int tag "SKRPGITEMS-%{_stat}%" of custom nbt of {_i}
         if {_int} is not set:
             return {_i}
             stop
         set {_finalamount} to {_int}-{_amount}
-        set int tag "tag;SKRPGITEMS-%{_stat}%" of nbt compound of {_i} to {_int}-{_amount}
+        set int tag "SKRPGITEMS-%{_stat}%" of custom nbt of {_i} to {_int}-{_amount}
         set {_lore::*} to lore of {_i}
         if "%uncolored {_lore::*}%" does not contain uncolored "%{skrpg.config.database::%{_stat}%::display-name}%: ":
             if {_finalamount} is below 0:
@@ -139,12 +151,12 @@ function skRPGItemsAddonRemoveStatAmount(i: item, stat: string, amount: integer)
                     set {_lore::%loop-index%} to "%formatted {skrpg.config.database::%{_stat}%::display-name}%&8: %{_text}%"
             set {_i} to {_i} with lore {_lore::*}
         #Update the stat amount with upgrades
-        set {_source-list::*} to string list tag "tag;SKRPGITEMS-sources-list" of nbt compound of {_i}
+        set {_source-list::*} to string list tag "SKRPGITEMS-sources-list" of custom nbt of {_i}
         if {_source-list::*} is set:
             loop {_source-list::*}:
-                set {_upgrade_int} to int tag "tag;SKRPGITEMS-%{_stat}%-upgrade-source-%loop-value%" of nbt compound of {_i}
+                set {_upgrade_int} to int tag "SKRPGITEMS-%{_stat}%-upgrade-source-%loop-value%" of custom nbt of {_i}
                 if {_upgrade_int} is set:
-                    set int tag "tag;SKRPGITEMS-%{_stat}%" of nbt compound of {_i} to {_int}+{_upgrade_int}
+                    set int tag "SKRPGITEMS-%{_stat}%" of custom nbt of {_i} to {_int}+{_upgrade_int}
         set {_i} to skRPGItemsAddonRefreshStatLineGlobal({_i}, {_stat})
     return {_i}
 #
@@ -153,16 +165,16 @@ function skRPGItemsAddonRemoveStatAmount(i: item, stat: string, amount: integer)
 #
 function skRPGItemsAddonRemoveStat(i: item, stat: string) :: item:
     if {skrpg.config.database::*} contains {_stat}:
-        set {_int} to int tag "tag;SKRPGITEMS-%{_stat}%" of nbt compound of {_i}
+        set {_int} to int tag "SKRPGITEMS-%{_stat}%" of custom nbt of {_i}
         if {_int} is not set:
             return {_i}
             stop
         #Check if there are upgrades, then remove
-        set {_source-list::*} to string list tag "tag;SKRPGITEMS-sources-list" of nbt compound of {_i}
+        set {_source-list::*} to string list tag "SKRPGITEMS-sources-list" of custom nbt of {_i}
         if {_source-list::*} is set:
             loop {_source-list::*}:
                 set {_i} to skRPGItemsAddonRemoveUpgrade({_i}, {_stat}, loop-value)
-        delete int tag "tag;SKRPGITEMS-%{_stat}%" of nbt compound of {_i}
+        delete int tag "SKRPGITEMS-%{_stat}%" of custom nbt of {_i}
         set {_lore::*} to lore of {_i}
         loop {_lore::*}:
             if uncolored {_lore::%loop-index%} contains uncolored "%{skrpg.config.database::%{_stat}%::display-name}%: ":
@@ -180,14 +192,18 @@ on skrpg update stat:
     add boots of event-player to {_checkitems::*}
     #Prevent having benefits from an armor piece without wearing it
     if tool of player is not any chestplate or any helmet or any leggings or any boots:
+        #Ne pas prendre en compte reliques et compagnons
+        SKICItemCategoryOf(tool of player) is not "relique"
+        string tag "SKPET-PET" of custom nbt of tool of player is not set
+        #Compter ensuite
         add tool of event-player to {_checkitems::*}
     delete {_checkstat}
     loop {_checkitems::*}:
         set {_i} to loop-value
-        set {_nbt} to nbt compound of {_i}
-        set {_tag} to int tag "tag;SKRPGITEMS-%event-string%" of {_nbt}
+        set {_nbt} to custom nbt of {_i}
+        set {_tag} to int tag "SKRPGITEMS-%event-string%" of {_nbt}
         if {_tag} is set:
-            add int tag "tag;SKRPGITEMS-%event-string%" of nbt compound of {_i} to {_checkstat}
+            add int tag "SKRPGITEMS-%event-string%" of custom nbt of {_i} to {_checkstat}
     skRPGSetStatAmount(event-player, event-string, {_checkstat}, "equipment", false)
 
 #
@@ -197,25 +213,25 @@ on skrpg update stat:
 #
 function skRPGItemsAddonUpgradeStat(i: item, stat: string = "defense", amount: integer = 10, display: string = "&d[{v}]", source: string = "default") :: item:
 
-    set {_int} to int tag "tag;SKRPGITEMS-%{_stat}%" of nbt compound of {_i}
+    set {_int} to int tag "SKRPGITEMS-%{_stat}%" of custom nbt of {_i}
     if {_int} is not set:
         return {_i}
         stop
     add {_amount} to {_int}
     #Save the source of the upgrade
     #But check if it alredy exists
-    set {_source-amount} to int tag "tag;SKRPGITEMS-%{_stat}%-upgrade-source-%{_source}%" of nbt compound of {_i}
+    set {_source-amount} to int tag "SKRPGITEMS-%{_stat}%-upgrade-source-%{_source}%" of custom nbt of {_i}
     if {_source-amount} is set:
-        set int tag "tag;SKRPGITEMS-%{_stat}%-upgrade-source-%{_source}%" of nbt compound of {_i} to {_source-amount}+{_amount}
+        set int tag "SKRPGITEMS-%{_stat}%-upgrade-source-%{_source}%" of custom nbt of {_i} to {_source-amount}+{_amount}
     else:
-        set int tag "tag;SKRPGITEMS-%{_stat}%-upgrade-source-%{_source}%" of nbt compound of {_i} to {_amount}
+        set int tag "SKRPGITEMS-%{_stat}%-upgrade-source-%{_source}%" of custom nbt of {_i} to {_amount}
     #Save the display of the upgrade
-    set string tag "tag;SKRPGITEMS-%{_stat}%-upgrade-display-%{_source}%" of nbt compound of {_i} to {_display}
+    set string tag "SKRPGITEMS-%{_stat}%-upgrade-display-%{_source}%" of custom nbt of {_i} to {_display}
     #Register the source in the nbt
-    set {_source-list::*} to string list tag "tag;SKRPGITEMS-sources-list" of nbt compound of {_i}
+    set {_source-list::*} to string list tag "SKRPGITEMS-sources-list" of custom nbt of {_i}
     if {_source-list::*} does not contain {_source}:
         add {_source} to {_source-list::*}
-        set string list tag "tag;SKRPGITEMS-sources-list" of nbt compound of {_i} to {_source-list::*}
+        set string list tag "SKRPGITEMS-sources-list" of custom nbt of {_i} to {_source-list::*}
     return skRPGItemsAddonSetStat({_i}, {_stat}, {_int})
 
 #
@@ -224,23 +240,23 @@ function skRPGItemsAddonUpgradeStat(i: item, stat: string = "defense", amount: i
 #
 function skRPGItemsAddonRemoveUpgradeAmount(i: item, stat: string = "defense", amount: integer = 10, source: string = "default", can-be-negative: boolean = false) :: item:
 
-    set {_int} to int tag "tag;SKRPGITEMS-%{_stat}%" of nbt compound of {_i}
+    set {_int} to int tag "SKRPGITEMS-%{_stat}%" of custom nbt of {_i}
     if {_int} is not set:
         return {_i}
         stop
     remove {_amount} from {_int}
     #Save the source of the upgrade
     #But check if it alredy exists
-    set {_source-amount} to int tag "tag;SKRPGITEMS-%{_stat}%-upgrade-source-%{_source}%" of nbt compound of {_i}
+    set {_source-amount} to int tag "SKRPGITEMS-%{_stat}%-upgrade-source-%{_source}%" of custom nbt of {_i}
     if {_source-amount} is set:
         if {_can-be-negative} = true:
-            set int tag "tag;SKRPGITEMS-%{_stat}%-upgrade-source-%{_source}%" of nbt compound of {_i} to {_source-amount}-{_amount}
+            set int tag "SKRPGITEMS-%{_stat}%-upgrade-source-%{_source}%" of custom nbt of {_i} to {_source-amount}-{_amount}
             return skRPGItemsAddonSetStat({_i}, {_stat}, {_int})
         else:
             if ({_source-amount}-{_amount}) <= 0:
                 return skRPGItemsAddonRemoveUpgrade({_i}, {_stat}, {_source})
             else:
-                set int tag "tag;SKRPGITEMS-%{_stat}%-upgrade-source-%{_source}%" of nbt compound of {_i} to {_source-amount}-{_amount}
+                set int tag "SKRPGITEMS-%{_stat}%-upgrade-source-%{_source}%" of custom nbt of {_i} to {_source-amount}-{_amount}
                 return skRPGItemsAddonSetStat({_i}, {_stat}, {_int})
     else:
         return {_i}
@@ -251,19 +267,19 @@ function skRPGItemsAddonRemoveUpgradeAmount(i: item, stat: string = "defense", a
 #
 function skRPGItemsAddonRemoveUpgrade(i: item, stat: string = "defense", source: string = "default") :: item:
 
-    set {_int} to int tag "tag;SKRPGITEMS-%{_stat}%" of nbt compound of {_i}
+    set {_int} to int tag "SKRPGITEMS-%{_stat}%" of custom nbt of {_i}
     if {_int} is not set:
         return {_i}
         stop
-    set {_source-amount} to int tag "tag;SKRPGITEMS-%{_stat}%-upgrade-source-%{_source}%" of nbt compound of {_i}
+    set {_source-amount} to int tag "SKRPGITEMS-%{_stat}%-upgrade-source-%{_source}%" of custom nbt of {_i}
     if {_source-amount} is set:
         #Get the amount of the upgrade
-        set {_upgrade-amount} to int tag  "tag;SKRPGITEMS-%{_stat}%-upgrade-source-%{_source}%" of nbt compound of {_i}
+        set {_upgrade-amount} to int tag  "SKRPGITEMS-%{_stat}%-upgrade-source-%{_source}%" of custom nbt of {_i}
         remove {_upgrade-amount} from {_int}
-        delete int tag  "tag;SKRPGITEMS-%{_stat}%-upgrade-source-%{_source}%" of nbt compound of {_i}
-        delete string tag "tag;SKRPGITEMS-%{_stat}%-upgrade-display-%{_source}%" of nbt compound of {_i}
+        delete int tag  "SKRPGITEMS-%{_stat}%-upgrade-source-%{_source}%" of custom nbt of {_i}
+        delete string tag "SKRPGITEMS-%{_stat}%-upgrade-display-%{_source}%" of custom nbt of {_i}
         #Check if the source exists in the list
-        set {_source-list::*} to string list tag "tag;SKRPGITEMS-sources-list" of nbt compound of {_i}
+        set {_source-list::*} to string list tag "SKRPGITEMS-sources-list" of custom nbt of {_i}
         if {_source-list::*} is set:
             #Remove source if its not used anymore
             set {_source_is_used} to skRPGItemsAddonIsUpgraded({_i})
@@ -271,9 +287,9 @@ function skRPGItemsAddonRemoveUpgrade(i: item, stat: string = "defense", source:
                 remove {_source} from {_source-list::*}
             #If there is not sources anymore, reset the line. Else, update it
             if {_source-list::*} is empty:
-                delete string list tag "tag;SKRPGITEMS-sources-list" of nbt compound of {_i} 
+                delete string list tag "SKRPGITEMS-sources-list" of custom nbt of {_i} 
             else:
-                set string list tag "tag;SKRPGITEMS-sources-list" of nbt compound of {_i} to {_source-list::*}
+                set string list tag "SKRPGITEMS-sources-list" of custom nbt of {_i} to {_source-list::*}
         return skRPGItemsAddonSetStat({_i}, {_stat}, {_int})
     else:
         return {_i}
@@ -284,8 +300,8 @@ function skRPGItemsAddonRemoveUpgrade(i: item, stat: string = "defense", source:
 #
 function skRPGItemsAddonParseDisplay(i: item, stat: string, source: string) :: string:
 
-    set {_int} to int tag "tag;SKRPGITEMS-%{_stat}%-upgrade-source-%{_source}%" of nbt compound of {_i}
-    set {_display} to string tag "tag;SKRPGITEMS-%{_stat}%-upgrade-display-%{_source}%" of nbt compound of {_i}
+    set {_int} to int tag "SKRPGITEMS-%{_stat}%-upgrade-source-%{_source}%" of custom nbt of {_i}
+    set {_display} to string tag "SKRPGITEMS-%{_stat}%-upgrade-display-%{_source}%" of custom nbt of {_i}
     if {_int} is below 0:
         set {_statdisplay} to "-%{_int}%"
     else:
@@ -298,8 +314,8 @@ function skRPGItemsAddonParseDisplay(i: item, stat: string, source: string) :: s
 #
 function skRPGItemsAddonRefreshStatLine(i: item, stat: string, source: string) :: item:
 
-    set {_int} to int tag "tag;SKRPGITEMS-%{_stat}%-upgrade-source-%{_source}%" of nbt compound of {_i}
-    set {_display} to string tag "tag;SKRPGITEMS-%{_stat}%-upgrade-display-%{_source}%" of nbt compound of {_i}
+    set {_int} to int tag "SKRPGITEMS-%{_stat}%-upgrade-source-%{_source}%" of custom nbt of {_i}
+    set {_display} to string tag "SKRPGITEMS-%{_stat}%-upgrade-display-%{_source}%" of custom nbt of {_i}
     if {_int} is below 0:
         set {_statdisplay} to "-%{_int}%"
     else:
@@ -308,14 +324,14 @@ function skRPGItemsAddonRefreshStatLine(i: item, stat: string, source: string) :
     loop {_lore::*}:
         if uncolored {_lore::%loop-index%} contains uncolored "%{skrpg.config.database::%{_stat}%::display-name}%: ":
             if {_int} is set:
-                set {_all-sources::*} to string list tag "tag;SKRPGITEMS-sources-list" of nbt compound of {_i}
+                set {_all-sources::*} to string list tag "SKRPGITEMS-sources-list" of custom nbt of {_i}
                 loop {_all-sources::*}:
                     set {_source2} to loop-value-2
                     set {_display2} to skRPGItemsAddonParseDisplay({_i}, {_stat}, {_source2})
                     {_lore::%loop-index-1%} does not contain {_display2}
                     set {_lore::%loop-index-1%} to "%formatted {_lore::%loop-index-1%}% %{_display2}%"
             else:
-                set {_int} to int tag "tag;SKRPGITEMS-%{_stat}%" of nbt compound of {_i}
+                set {_int} to int tag "SKRPGITEMS-%{_stat}%" of custom nbt of {_i}
                 if {_int} is below 0:
                     set {_text} to "&c%{_int}%"
                 else:
@@ -329,7 +345,7 @@ function skRPGItemsAddonRefreshStatLine(i: item, stat: string, source: string) :
 #
 function skRPGItemsAddonRefreshStatLineGlobal(i: item, stat: string) :: item:
 
-    set {_all-sources::*} to string list tag "tag;SKRPGITEMS-sources-list" of nbt compound of {_i}
+    set {_all-sources::*} to string list tag "SKRPGITEMS-sources-list" of custom nbt of {_i}
     loop {_all-sources::*}:
         set {_source} to loop-value
         set {_i} to skRPGItemsAddonRefreshStatLine({_i}, {_stat}, {_source})
@@ -339,13 +355,13 @@ function skRPGItemsAddonRefreshStatLineGlobal(i: item, stat: string) :: item:
 #
 function skRPGItemsAddonIsUpgraded(i: item) :: boolean:
 
-    set {_source-list::*} to string list tag "tag;SKRPGITEMS-sources-list" of nbt compound of {_i}
+    set {_source-list::*} to string list tag "SKRPGITEMS-sources-list" of custom nbt of {_i}
     if {_source-list::*} is set:
         loop {_source-list::*}:
             set {_source} to loop-value
             loop {skrpg.config.database::*}:
                 set {_stat} to loop-value-2
-                if int tag "tag;SKRPGITEMS-%{_stat}%-upgrade-source-%{_source}%" of nbt compound of {_i} is set:
+                if int tag "SKRPGITEMS-%{_stat}%-upgrade-source-%{_source}%" of custom nbt of {_i} is set:
                     return true
                     stop
         return false

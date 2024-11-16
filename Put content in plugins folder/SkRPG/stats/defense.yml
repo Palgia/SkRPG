@@ -6,6 +6,9 @@ id: "defense"
 #Display name to show in lore etc.
 display-name: "&a🛡 Defense"
 
+description:
+  - "&fChanges the amount of damage you receive"
+
 #The type of the stat
 #CHANCE -> Use this if your statistic needs to work with a percentage chance (useful for loot chance statistics, for example).
 #PERMANENT -> Use this if your statistic applies permanently. Useful for defense or strength statistics that need to activate with each damage received.

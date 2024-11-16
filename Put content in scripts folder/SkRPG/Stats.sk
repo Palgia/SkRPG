@@ -5,6 +5,7 @@
 
 #Strength
 on damage:
+    attacker is a player
     event is not cancelled
     damage cause is attack or projectile
     set {_stat} to skRPGgetGlobalStatAmount(attacker, "strength")
@@ -12,9 +13,14 @@ on damage:
 
 #Defense
 on damage:
+    victim is a player
     event is not cancelled
+    damage cause is not custom
     set {_stat} to skRPGgetGlobalStatAmount(victim, "defense")
-    remove {_stat} from damage
+    if {_stat} > 0:
+        remove (damage-(damage*(({_stat}/2)/100))) from damage
+    else if {_stat} < 0:
+        add (damage-(damage*(({_stat}/2)/100))) to damage
 
 #Speed
 #This is a custom event from SkRPG which is called everytime
@@ -59,7 +65,13 @@ on damage:
             stop
         set {skrpg.stat-cooldown::%uuid of victim%::dodge} to now
         set damage to 0
-        send "<##c2d1ce>💨 You dodged the attack !" to victim
+        set {_values::player} to victim
+        send "<##c2d1ce>💨 Attaque esquivée !" to victim
+        call event (custom event "onskrpgdodge" with values {_values::*})
+#Dodge event
+event "onskrpgdodge":
+    event-values: player
+    pattern: skrpg dodge
 
 #Crit chance & Crit damage
 on damage:
@@ -125,3 +137,30 @@ on damage:
     event is not cancelled
     set {_stat} to skRPGgetGlobalStatAmount(attacker, "true_damage")
     reduce health of victim by {_stat} 
+
+#Vitesse de minage
+on skrpg update stat:
+    event-string is "mining_speed"
+    set {_stat} to skRPGgetGlobalStatAmount(player, "mining_speed")
+    set {_bonus} to {_stat}/10
+    set event-player's block break speed attribute to 1+{_bonus}
+
+#Taille
+on skrpg update stat:
+    event-string is "scale"
+    set {_stat} to skRPGgetGlobalStatAmount(player, "scale")
+    set {_bonus} to {_stat}/10
+    set event-player's scale attribute to 1+{_bonus}
+
+#Vitesse d'attaque
+on skrpg update stat:
+    event-string is "attack_speed"
+    set {_stat} to skRPGgetGlobalStatAmount(player, "attack_speed")
+    set {_bonus} to {_stat}/10
+    set event-player's attack speed attribute to 1+{_bonus}
+
+#XP Bonus
+on player pickup xp:
+    set {_stat} to skRPGgetGlobalStatAmount(player, "xp_bonus")
+    set {_xp} to (event-number+{_stat})-event-number
+    add {_xp} to experience of player

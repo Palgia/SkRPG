@@ -1,13 +1,13 @@
 #The ID of the stat, to use it with commands or functions
 #DO NOT USE SPACES !! USE _ instead !
-#Example: some_stat
-id: "strength"
+#Example: some_id
+id: "fishing_luck"
 
 #Display name to show in lore etc.
-display-name: "&c⚔ Strength"
+display-name: "<#65D7FF>🎣 Fishing luck"
 
 description:
-- "&fChanges your damage amount"
+  - "&fHas no uses yet!"
 
 #The type of the stat
 #CHANCE -> Use this if your statistic needs to work with a percentage chance (useful for loot chance statistics, for example).
@@ -19,7 +19,7 @@ max-level: 100
 
 #Value can be negative ?
 #Negative statistics will have an inverse effect.
-can-be-negative: true
+can-be-negative: false
 
 #Base amount given to the player by default
 base-amount: 0

@@ -4,7 +4,10 @@
 id: "foraging_fortune"
 
 #Display name to show in lore etc.
-display-name: "&6🪓 Foraging fortune"
+display-name: "&6🪓 Foraring fortune"
+
+description:
+  - "&fChanges the chances of getting more drops from wood."
 
 #The type of the stat
 #CHANCE -> Use this if your statistic needs to work with a percentage chance (useful for loot chance statistics, for example).

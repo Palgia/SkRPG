@@ -1,13 +1,13 @@
 #The ID of the stat, to use it with commands or functions
 #DO NOT USE SPACES !! USE _ instead !
-#Example: some_stat
-id: "strength"
+#Example: some_id
+id: "xp_bonus"
 
 #Display name to show in lore etc.
-display-name: "&c⚔ Strength"
+display-name: "<#87FF36>🟢 XP Bonus"
 
 description:
-- "&fChanges your damage amount"
+  - "&fChanges the amount of XP from killing mobs"
 
 #The type of the stat
 #CHANCE -> Use this if your statistic needs to work with a percentage chance (useful for loot chance statistics, for example).

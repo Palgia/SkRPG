@@ -6,6 +6,9 @@ id: "crit_chance"
 #Display name to show in lore etc.
 display-name: "<#91082d>💥 Crit chance"
 
+description:
+  - "&fChanges your critical hit chances"
+
 #The type of the stat
 #CHANCE -> Use this if your statistic needs to work with a percentage chance (useful for loot chance statistics, for example).
 #PERMANENT -> Use this if your statistic applies permanently. Useful for defense or strength statistics that need to activate with each damage received.

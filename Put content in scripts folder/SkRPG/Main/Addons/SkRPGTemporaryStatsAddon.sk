@@ -18,28 +18,34 @@ on skrpg complete loading:
 #
 function SkRpgTemporaryStatAdd(p: player, stat: text, amount: integer, time: timespan):
 
-    set {_uuid} to uuid of {_p}
-    if {skrpg.config.database::*} contains {_stat}:
-        if {skrpg.main-config::storage-variables::*} does not contain "temporary":
-            send "&a[SkRPG] &cERROR: Storage temporary not found. Please add 'temporary' to storage types in config.yml!" to console
-            stop
-        set {_random-number1} to random integer between 1 and 999999
-        set {_random-number2} to random integer between 1 and 999999
-        set {_id} to "%{_random-number1}%-%{_random-number2}%"
-        #Save all informations
-        add {_id} to {skrpgtemporarystats.player.database::%{_uuid}%::*}
-        set {_now} to now
-        set {skrpgtemporarystats.player.database::%{_uuid}%::%{_id}%::stat} to {_stat}
-        set {skrpgtemporarystats.player.database::%{_uuid}%::%{_id}%::amount} to {_amount}
-        set {skrpgtemporarystats.player.database::%{_uuid}%::%{_id}%::start-date} to {_now}
-        set {skrpgtemporarystats.player.database::%{_uuid}%::%{_id}%::duration} to {_time}
-        add {_time} to {_now}
-        set {skrpgtemporarystats.player.database::%{_uuid}%::%{_id}%::end-date} to {_now}
-        add {_amount} to {skrpg.player.database::%{_uuid}%::%{_stat}%::%{_storage}%}
-        skRPGAddStatAmount({_p}, {_stat}, {_amount}, "temporary", true)
-        skRPGCheckStats({_p}, {_eventcall})
-    else:
-        send "&a[SkRPGTemporaryStatsAddon] &cERROR: Stat %{_stat}% used in function SkRpgTemporaryStatAdd does not exists." to console
+    create section with {_p}, {_stat}, {_amount}, {_time} stored in {_section}:
+        set {_uuid} to uuid of {_p}
+        if {skrpg.config.database::*} contains {_stat}:
+            if {skrpg.main-config::storage-variables::*} does not contain "temporary":
+                send "&a[SkRPG] &cERROR: Storage temporary not found. Please add 'temporary' to storage types in config.yml!" to console
+                stop
+            if (skRPGgetGlobalStatAmount({_p}, {_stat})+{_amount}) > {skrpg.config.database::%{_stat}%::max-level}:
+                set {_exceed} to (skRPGgetGlobalStatAmount({_p}, {_stat})+{_amount})-{skrpg.config.database::%{_stat}%::max-level}
+                remove {_exceed} from {_amount}
+                if {_amount} < 0:
+                    stop
+            set {_random-number1} to random integer between 1 and 999999
+            set {_random-number2} to random integer between 1 and 999999
+            set {_id} to "%{_random-number1}%-%{_random-number2}%"
+            #Save all informations
+            add {_id} to {skrpgtemporarystats.player.database::%{_uuid}%::*}
+            set {_now} to now
+            set {skrpgtemporarystats.player.database::%{_uuid}%::%{_id}%::stat} to {_stat}
+            set {skrpgtemporarystats.player.database::%{_uuid}%::%{_id}%::amount} to {_amount}
+            set {skrpgtemporarystats.player.database::%{_uuid}%::%{_id}%::start-date} to {_now}
+            set {skrpgtemporarystats.player.database::%{_uuid}%::%{_id}%::duration} to {_time}
+            add {_time} to {_now}
+            set {skrpgtemporarystats.player.database::%{_uuid}%::%{_id}%::end-date} to {_now}
+            skRPGAddStatAmount({_p}, {_stat}, {_amount}, "temporary", true)
+            skRPGCheckStats({_p}, true)
+        else:
+            send "&a[SkRPGTemporaryStatsAddon] &cERROR: Stat %{_stat}% used in function SkRpgTemporaryStatAdd does not exists." to console
+    run section {_section} async
 
 
 #
@@ -47,13 +53,14 @@ function SkRpgTemporaryStatAdd(p: player, stat: text, amount: integer, time: tim
 #
 every 1 second:
 
-    loop all players:
+    loop all players where [{skrpgtemporarystats.player.database::%uuid of input%::*} is not empty]:
         loop {skrpgtemporarystats.player.database::%uuid of loop-player%::*}:
             set {_id} to loop-value-2
             if now >= {skrpgtemporarystats.player.database::%uuid of loop-player%::%{_id}%::end-date}:                
                 skRPGRemoveStatAmount(loop-player, {skrpgtemporarystats.player.database::%uuid of loop-player%::%{_id}%::stat}, {skrpgtemporarystats.player.database::%uuid of loop-player%::%{_id}%::amount}, "temporary", true)
                 delete {skrpgtemporarystats.player.database::%uuid of loop-player%::%{_id}%::*}
                 remove {_id} from {skrpgtemporarystats.player.database::%uuid of loop-player%::*}
+                skRPGCheckStats(loop-player, true)
 
 #
 #Commands
@@ -91,3 +98,12 @@ on tab complete of "/skrpgtemporarystat":
                 set tab completions for position 4 to 5 and 10 and 20 and 30 and 40 and 50
                 if tab arg-4 is set:
                     set tab completions for position 5 to "30 seconds" and "1 minute" and "10 minutes" and "1 hour"
+
+#
+#Command
+#
+command /skrpgt <player> <string> <integer> <timespan>:
+    executable by: player, console
+    permission: grade.admin
+    trigger:
+        SkRpgTemporaryStatAdd(arg 1, arg 2, arg 3, arg 4)

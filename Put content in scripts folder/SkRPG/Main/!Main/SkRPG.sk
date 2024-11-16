@@ -156,13 +156,9 @@ on load:
                     send "&a[SkRPG] &fLoaded display for &e%{_id}% &ras %{_display}%" to console
                 set {skrpg.config.database::%{_id}%::display-name} to {_display}
                 #
-                #Type
-                set {_type} to yaml value "type" from loop-value-1
-                if {_type} is not set:
-                    set {_type} to "permanent"
-                if {_debug} is true:
-                    send "&a[SkRPG] &fDefined &e%{_id}% &ras %uppercase {_type}%" to console
-                set {skrpg.config.database::%{_id}%::type} to {_type}
+                #Description
+                set {_desc::*} to yaml list "description" from loop-value-1
+                set {skrpg.config.database::%{_id}%::description::*} to formatted {_desc::*}      
                 #
                 #Max level
                 set {_max-level} to yaml value "max-level" from loop-value-1
@@ -422,7 +418,7 @@ function skRPGLoadExtraStorage(addon: text, storage: text):
             send "&a[SkRPG] &e[API] &cERROR: Storage type %{_storage}% alredy exists." to console
             stop
         add {_storage} to {skrpg.main-config::storage-variables::*}
-        add {_storage} to {skrpg.main-config::storages-from-addons::%{_storage}%::*}
+        add {_storage} to {skrpg.main-config::storages-from-addons::%{_addon}%::*}
         send "&a[SkRPG] &e[API] &aAdded extra storage type &e%{_storage}%" to console
     else:
         send "&a[SkRPG] &e[API] &cERROR: Addon &e%{_addon}% &cnot loaded ! Use skRPGLoadAddon(<addon>, <path>) first." to console
@@ -461,20 +457,6 @@ function skRPGLoadExtraStatParameters(addon: text, stat: text, parameterName: ob
             set {skrpg.config.database::%{_stat}%::%loop-value%} to {_paramvalue}
     else:
         send "&a[SkRPG] &e[API] &cERROR: Addon &e%{_addon}% &cnot loaded ! Use skRPGLoadAddon(<addon>, <path>) first." to console
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-#FUNCTION TO DISABLE PLAYER'S ACTION BAR FOR AN AMOUNT OF TIME
-#Useful if you want to send messages without overriding the current action bar
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-function skRPGDisableActionBarDuration(p: player, time: timespan):
-
-    set {_uuid} to uuid of {_p}
-    set {skrpg.action-bar.is-disabled::%{_uuid}%} to true
-    wait {_time}
-    set {skrpg.action-bar.is-disabled::%{_uuid}%} to false
-#Enables the actionbar back if player disconnects
-on quit:
-    if {skrpg.action-bar.is-disabled::%uuid of player%} is true:
-        set {skrpg.action-bar.is-disabled::%uuid of player%} to false
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #
@@ -504,6 +486,7 @@ on first join:
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 command /skrpg <text=help> [<text>] [<text>] [<text>] [<text>]:
     permission: skrpg.admin
+    executable by: console, player
     usage: &e/skrpg help
     trigger:
         if arg 1 is "info":
@@ -585,6 +568,7 @@ command /skrpg <text=help> [<text>] [<text>] [<text>] [<text>]:
                                     else:
                                         set {_storage} to "permanent"
                                     skRPGAddStatAmount({_p}, {_stat}, {_amount}, {_storage})
+                                    sender is not console
                                     send "&a[SkRPG] &eAdded &a%{_amount}% &eto stat &a%{_stat}% &eof &a%{_p}% &e! &7(Storage: %{_storage}%)"
                                 else:
                                     send "&a[SkRPG] &cAmount argument given not valid"             
@@ -738,13 +722,13 @@ on join:
 on join:
     if {skrpg.main-config::action-bar-enabled} is true:
         while player is online:
-            skRPGupdateActionBar(player)
+            if {skrpg.action-bar-stop::%uuid of player%} is not set:
+                skRPGupdateActionBar(player)
             wait 1 second
 
+#Function for updating action bar
 function skRPGupdateActionBar(p: player):
-    set {_uuid} to uuid of {_p}
-    if {skrpg.action-bar.is-disabled::%{_uuid}%} is true:
-        stop
+    {skrpg.action-bar-stop::%uuid of {_p}%} is not set
     set {_action-bar} to {skrpg.main-config::action-bar-content}
     #Replace by placeholders
     replace all "{health}" with "%health of {_p}%" in {_action-bar}
@@ -755,6 +739,23 @@ function skRPGupdateActionBar(p: player):
             replace all "{%loop-value%-maxamount}" with "%{skrpg.config.database::%loop-value%::max-level}%" in {_action-bar}  
     send action bar formatted {_action-bar} to {_p}
 
+#Function to pause action bar. Useful if you want to show something else
+function skRPGPauseActionBar(p: player, time: integer):
+
+    if {skrpg.action-bar-stop::%uuid of {_p}%} > 0:
+        set {skrpg.action-bar-stop::%uuid of {_p}%} to {_time}
+    else:
+        set {skrpg.action-bar-stop::%uuid of {_p}%} to {_time}
+        while {skrpg.action-bar-stop::%uuid of {_p}%} > 0:
+            remove 1 from {skrpg.action-bar-stop::%uuid of {_p}%}
+            wait 1 second
+        delete {skrpg.action-bar-stop::%uuid of {_p}%}
+
+
+
+on join:
+    delete {skrpg.action-bar-stop::%uuid of player%}
+
 #
 #CUSTOM HEALTH REGEN
 #
@@ -764,14 +765,21 @@ on join:
             if health of player > 0:
                 set {_vitality} to skRPGgetGlobalStatAmount(player, "vitality")
                 heal player by {skrpg.main-config::health-regen-amount}+{_vitality}
+                set {_values::player} to player
+                #Appeler l'event custom
+                call event (custom event "skrpg-customregen" with values {_values::*})
                 #This is the Wisdom part
                 #The time between each regen will be reduced or increased
                 #based of the player's wisdom
                 set {_wait} to {skrpg.main-config::health-regen-time}
                 set {_regeneration} to skRPGgetGlobalStatAmount(player, "regeneration")
-            set {_time} to "%{_regeneration}/30% seconds" parsed as timespan
+            set {_time} to "%{_regeneration}/20% seconds" parsed as timespan
             remove {_time} from {_wait}
             wait {_wait}
+#Event qui s'active chaque fois que le joueur régen ses PV naturellement avec Vitalité + Régénération
+event "skrpg-customregen":
+    event-values: player
+    pattern: skrpg regen
 
 #
 #HEAL PLAYER ON RESPAWN
